@@ -1,0 +1,100 @@
+name: Release Builds
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            ext: tar.gz
+            out: ascii-image-converter_Linux_amd64_64bit.tar.gz
+          - os: ubuntu-latest
+            goos: linux
+            goarch: arm64
+            ext: tar.gz
+            out: ascii-image-converter_Linux_arm64_64bit.tar.gz
+          - os: ubuntu-latest
+            goos: linux
+            goarch: arm
+            goarm: 6
+            ext: tar.gz
+            out: ascii-image-converter_Linux_armv6_32bit.tar.gz
+          - os: ubuntu-latest
+            goos: linux
+            goarch: 386
+            ext: tar.gz
+            out: ascii-image-converter_Linux_i386_32bit.tar.gz
+          - os: macos-latest
+            goos: darwin
+            goarch: amd64
+            ext: tar.gz
+            out: ascii-image-converter_macOS_amd64_64bit.tar.gz
+          - os: macos-latest
+            goos: darwin
+            goarch: arm64
+            ext: tar.gz
+            out: ascii-image-converter_macOS_arm64_64bit.tar.gz
+          - os: windows-latest
+            goos: windows
+            goarch: amd64
+            ext: zip
+            out: ascii-image-converter_Windows_amd64_64bit.zip
+          - os: windows-latest
+            goos: windows
+            goarch: arm64
+            ext: zip
+            out: ascii-image-converter_Windows_arm64_64bit.zip
+          - os: windows-latest
+            goos: windows
+            goarch: arm
+            goarm: 6
+            ext: zip
+            out: ascii-image-converter_Windows_armv6_32bit.zip
+          - os: windows-latest
+            goos: windows
+            goarch: 386
+            ext: zip
+            out: ascii-image-converter_Windows_i386_32bit.zip
+    name: Build ${{ matrix.out }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+      - name: Set up environment variables
+        run: |
+          echo "GOOS=${{ matrix.goos }}" >> $GITHUB_ENV
+          echo "GOARCH=${{ matrix.goarch }}" >> $GITHUB_ENV
+          if [ "${{ matrix.goarm }}" != "" ]; then
+            echo "GOARM=${{ matrix.goarm }}" >> $GITHUB_ENV
+          fi
+      - name: Build
+        run: |
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            go build -o ascii-image-converter.exe
+          else
+            go build -o ascii-image-converter
+          fi
+      - name: Archive
+        run: |
+          if [ "${{ matrix.ext }}" = "zip" ]; then
+            zip ${{ matrix.out }} ascii-image-converter.exe || zip ${{ matrix.out }} ascii-image-converter
+          else
+            tar -czvf ${{ matrix.out }} ascii-image-converter
+          fi
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.out }}
+          path: ${{ matrix.out }} 
