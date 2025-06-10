@@ -89,7 +89,11 @@ jobs:
       - name: Archive
         run: |
           if [ "${{ matrix.ext }}" = "zip" ]; then
-            zip ${{ matrix.out }} ascii-image-converter.exe || zip ${{ matrix.out }} ascii-image-converter
+            if [ -f ascii-image-converter.exe ]; then
+              zip ${{ matrix.out }} ascii-image-converter.exe
+            else
+              zip ${{ matrix.out }} ascii-image-converter
+            fi
           else
             tar -czvf ${{ matrix.out }} ascii-image-converter
           fi
