@@ -30,7 +30,7 @@ import (
 
 func saveAsciiArt(asciiSet [][]imgManip.AsciiChar, imagePath, savePath, urlImgName string, onlySave bool) error {
 	// To make sure uncolored ascii art is the one saved as .txt
-	saveAscii := flattenAscii(asciiSet, false, true)
+	saveAscii := flattenAscii(asciiSet, colored || grayscale, false)
 
 	saveFileName, err := createSaveFileName(imagePath, urlImgName, "-ascii-art.txt")
 	if err != nil {
