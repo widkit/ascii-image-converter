@@ -21,7 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -29,10 +29,10 @@ import (
 )
 
 func saveAsciiArt(asciiSet [][]imgManip.AsciiChar, imagePath, savePath, urlImgName string, onlySave bool) error {
-	// To make sure uncolored ascii art is the one saved as .txt
+	// To make sure colored ascii art is the one saved as .txt
 	saveAscii := flattenAscii(asciiSet, colored || grayscale, false)
 
-	saveFileName, err := createSaveFileName(imagePath, urlImgName, "-ascii-art.txt")
+	saveFileName, err := createSaveFileName(imagePath, urlImgName, "cache.greetings")
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func saveAsciiArt(asciiSet [][]imgManip.AsciiChar, imagePath, savePath, urlImgNa
 
 	// If path exists
 	if _, err := os.Stat(savePath); !os.IsNotExist(err) {
-		err := ioutil.WriteFile(savePath+saveFileName, []byte(strings.Join(saveAscii, "\n")), 0666)
+		err := ioutil.WriteFile(saveFileName, []byte(strings.Join(saveAscii, "\n")), 0666)
 		if err != nil {
 			return err
 		} else if onlySave {
@@ -59,31 +59,26 @@ func saveAsciiArt(asciiSet [][]imgManip.AsciiChar, imagePath, savePath, urlImgNa
 }
 
 // Returns new image file name along with extension
-func createSaveFileName(imagePath, urlImgName, label string) (string, error) {
-	if urlImgName != "" {
-		currExt := path.Ext(urlImgName)
-		newName := urlImgName[:len(urlImgName)-len(currExt)] // e.g. Grabs myImage from myImage.jpeg
-
-		return newName + label, nil
+func createSaveFileName(imagePath, urlImgName, suffix string) (string, error) {
+	// If imagePath is empty, use urlImgName
+	if imagePath == "" {
+		imagePath = urlImgName
 	}
 
-	if imagePath == "-" {
-		if inputIsGif {
-			return "piped-gif" + label, nil
-		}
-		return "piped-img" + label, nil
+	// Default output directory if not provided
+	outputDir := "output"
+	if saveTxtPath != "" && saveTxtPath != "." {
+		outputDir = filepath.Clean(saveTxtPath)
 	}
 
-	fileInfo, err := os.Stat(imagePath)
-	if err != nil {
+	// Ensure the output directory exists
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return "", err
 	}
 
-	currName := fileInfo.Name()
-	currExt := path.Ext(currName)
-	newName := currName[:len(currName)-len(currExt)] // e.g. Grabs myImage from myImage.jpeg
-
-	return newName + label, nil
+	// Always save as 'cache.greetings' in the given directory
+	saveFileName := filepath.Join(outputDir, "cache.greetings")
+	return saveFileName, nil
 }
 
 // flattenAscii flattens a two-dimensional grid of ascii characters into a one dimension
